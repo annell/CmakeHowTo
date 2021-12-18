@@ -6,6 +6,7 @@ set(EXTERNAL_INSTALL_LOCATION ${CMAKE_BINARY_DIR}/external)
 message(EXTERNAL_INSTALL_LOCATION: ${EXTERNAL_INSTALL_LOCATION})
 
 add_subdirectory(Components/FunctionLibb)
+add_subdirectory(Components/YamlLibb)
 add_subdirectory(Components/app)
 
 message("----- Done -----")

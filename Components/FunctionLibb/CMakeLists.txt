@@ -5,7 +5,9 @@ message("----------------${PROJECT_NAME}----------------")
 set(${PROJECT_NAME}_INCLUDES ${PROJECT_SOURCE_DIR} CACHE INTERNAL "extra_includes")
 
 
-add_library(${PROJECT_NAME} SHARED Functions.cpp)
+add_library(${PROJECT_NAME} SHARED
+        Functions.cpp
+        )
 
 message("-- Adding gtest")
 
@@ -16,14 +18,20 @@ ExternalProject_Add(googletest
         CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${EXTERNAL_INSTALL_LOCATION}
         )
 
-link_directories(${EXTERNAL_INSTALL_LOCATION}/lib)
-
 enable_testing()
 
-add_executable(RunTests test/test_ValidateLibraryFunctions.cpp)
-add_dependencies(RunTests googletest)
+add_executable(RunTests
+        test/test_ValidateLibraryFunctions.cpp
+        )
+add_dependencies(RunTests
+        googletest
+        )
 
-target_link_libraries(RunTests ${PROJECT_NAME} gtest gtest_main)
+target_link_libraries(RunTests PRIVATE
+        ${PROJECT_NAME}
+        gtest
+        gtest_main
+        )
 target_include_directories(RunTests PRIVATE
         ${EXTERNAL_INSTALL_LOCATION}/include
         .

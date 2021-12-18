@@ -6,8 +6,8 @@ So I will continue to add in random methods of linking in librarys to try them o
 ## Structure
 
 ```
-root
-    CMakeList.txt
+CmakeHowTo
+|-- CMakeList.txt
     |
     Components
         |
@@ -16,25 +16,35 @@ root
         |   |-- main.cpp
         |
         |-- FunctionLibb
+        |   |-- CmakeList.txt
+        |   |-- Functions.cpp
+        |   |-- Functions.h
+        |   |
+        |   |-- test
+        |       |-- test_ValidateLibraryFunctions.cpp
+        |
+        |-- YamlLibb
             |-- CmakeList.txt
-            |-- Functions.cpp
-            |-- Functions.h
-            |
-            |-- test
-                |-- test_ValidateLibraryFunctions.cpp
+            |-- Yaml.cpp
+            |-- Yaml.h
 ```
 
 So the idea is to have all the different components split up into their own parts, and the `root` `CMakeList.txt` includes all components, the components are then themself responsible of linking up against it's dependencies.
 
 ## Use cases
 The specific use cases are described below for my own convenience, or else I will forget about it.
-### Order of component include matters
+<details><summary><font size="4"><b>Order of component include matters</b></font></summary><p>
 Since I want to use the functionlibb in the app, I need to in the root add the FunctionLibb before I add App, such as:
+
 ```
 add_subdirectory(Components/FunctionLibb)
 add_subdirectory(Components/app)
 ```
-### Use FunctionLibb in App
+
+</p></details>
+
+<details><summary><font size="4"><b>Use FunctionLibb in App</b></font></summary><p>
+
 The simple use case of linking a component together with another is done as such:
 ```
 add_executable(${PROJECT_NAME} main.cpp)
@@ -57,7 +67,10 @@ And building the library is as easy as:
 add_library(${PROJECT_NAME} SHARED Functions.cpp)
 ```
 
-### Add a external library from github
+</p></details>
+
+<details><summary><font size="4"><b>Add a external library from github</b></font></summary><p>
+
 The external library I wanted to add was [googletest](https://github.com/google/googletest), to do that I used the CMake module `ExternalProject`, but then it was as easy as:
 ```
 include(ExternalProject)
@@ -69,8 +82,10 @@ ExternalProject_Add(googletest
 ```
 and after calling `add_dependencies(RunTests googletest)`, the cmake system will try to download the specified tag and build it in the cmake build folders when the `RunTests` project is built - Super simple and neat!
 
+</p></details>
 
-### Add Google test to CMake
+<details><summary><font size="4"><b>Add Google test to CMake</b></font></summary><p>
+
 When building google tests, there are a few parts that needs to be done.
 1. Create a executable to run the tests.
 2. Add googletest as a dependency for the executable.
@@ -93,3 +108,72 @@ target_include_directories(RunTests PRIVATE
 include(GoogleTest)
 gtest_discover_tests(RunTests)
 ```
+</p></details>
+
+<details><summary><font size="4"><b>Dynamic vs Static library</b></font></summary><p>
+
+The two main library types (that I know of?) are:
+- Dynamic library, called `libgtest.dylib` on mac, `libgtest.dll` on windows and `libgtest.so` on UNIX.
+- Static library, called `libgtest.a` on mac / UNIX and `libtest.lib` on windows.
+
+Where static libraries are a little bit easier to use as they compile everything together to a big binary file with no external links.
+For dynamic libraries, you also need the libraries external references as it will not be compiled into the same binary.
+
+This reduces overall size and increases flexibility of the dynamic library, but makes it a bit more annoying to work with.
+In cmake it is very easy to build your library as a dynamic (shared library), just do the following:
+```
+add_library(${PROJECT_NAME} SHARED Functions.cpp)
+```
+
+And for building the a static library change the `SHARED` keyword to `STATIC` such as:
+```
+add_library(${PROJECT_NAME} SHARED Functions.cpp````)
+```
+
+And when linking in the shared vs static library into your app you do exactly the same thing for both of them:
+```
+add_executable(${PROJECT_NAME} main.cpp)
+add_dependencies(${PROJECT_NAME}
+    YamlLibb
+    FunctionLibb
+)
+
+target_link_libraries(${PROJECT_NAME} PRIVATE
+    FunctionLibb
+    YamlLibb
+)
+target_include_directories(${PROJECT_NAME} PRIVATE
+    ${FunctionLibb_INCLUDES}
+    ${YamlLibb_INCLUDES}
+)
+```
+
+With the caveat that the shared library (`FunctionLibb` is shared and `YamlLibb` is static) also would need it's external dependencies also linked in, but in this example `FunctionLibb` does not have any external dependencies.
+
+</p></details>
+
+<details><summary><font size="4"><b>Target "yaml-cpp" of type UTILITY may not be linked into another target</b></font></summary><p>
+
+When I was linking in the Yaml-cpp library I kept running into
+> CMake Error at Components/YamlLibb/CMakeLists.txt:24 (target_link_libraries):
+Target "yaml-cpp" of type UTILITY may not be linked into another target.
+One may link only to INTERFACE, OBJECT, STATIC or SHARED libraries, or to
+executables with the ENABLE_EXPORTS property set
+
+And when searching around for it, the explanation I found was that cmake couldn't resolve the path to the yaml-cpp lib
+So instead of doing:
+
+```
+target_link_libraries(${PROJECT_NAME} PRIVATE
+    yaml-cpp
+)
+```
+I had to explicitly point out to cmake where the static library was like so:
+```
+target_link_libraries(${PROJECT_NAME} PRIVATE
+    ${EXTERNAL_INSTALL_LOCATION}/lib/libyaml-cpp.a
+)
+```
+But then it worked like a charm!
+
+</p></details>
