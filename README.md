@@ -177,3 +177,17 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
 But then it worked like a charm!
 
 </p></details>
+
+<details><summary><font size="4"><b>Make IDE detect externally downloaded libraries</b></font></summary><p>
+
+It is very nice if you can setup your IDE to work with all external libraries, so your intellisense works correctly and your includes work.
+How I made this work in this project was to use the `include_directories(...)` directive in cmake.
+So in my root's cmake i do the following, to setup the path where I put all my external libraries and then tell the IDE where to find all includes:
+```
+set(EXTERNAL_INSTALL_LOCATION ${CMAKE_BINARY_DIR}/external)
+include_directories(${EXTERNAL_INSTALL_LOCATION}/include)
+```
+
+So with this small maneuver I was able to get the IDE understand about my includes.
+
+</p></details>
